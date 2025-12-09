@@ -39,7 +39,10 @@
 
 ## 🚀 Запуск та Використання
 
-### 1. Встановлення залежностей
-
+Examples
 ```bash
-pip install -r requirements.txt
+python main.py --file data/graph_1000.csv --source 0 --target 999
+```
+```bash
+python benchmark.py
+```
