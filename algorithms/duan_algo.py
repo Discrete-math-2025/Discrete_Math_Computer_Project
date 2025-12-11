@@ -1,6 +1,7 @@
 import math
 import heapq
 import numpy as np
+import random
 INF = float('inf')
 
 class DuanSSSP:
@@ -308,3 +309,28 @@ test = [[0, 5, 1, 0], [0, 0, 0, 3], [0, 2, 0, 0], [0, 0, 0, 0]]
 print(run_duan(np.array(test), 0, 1))
 print(run_duan(np.array(test), 0, 2))
 print(run_duan(np.array(test), 0, 3))
+
+
+def generate_sparse_graph(n: int, density: float = 2.0) -> Graph:
+    m = int(n * density)
+    graph = [[0 for _ in range(n)] for _ in range(n)]
+
+    for i in range(n - 1):
+        weight = random.uniform(1, 10)
+        graph.add_edge(i, i + 1, weight)
+
+    edges_added = n - 1
+    attempts = 0
+    max_attempts = m * 10
+
+    while edges_added < m and attempts < max_attempts:
+        src = random.randint(0, n - 1)
+        dst = random.randint(0, n - 1)
+        attempts += 1
+
+        if src != dst and not graph.has_edge(src, dst):
+            weight = random.uniform(1, 10)
+            graph.add_edge(src, dst, weight)
+            edges_added += 1
+
+    return graph
