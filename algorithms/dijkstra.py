@@ -1,9 +1,10 @@
 import numpy as np
 import networkx as nx
-import random
 import heapq
+import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
+import time
 
-# print("\033[H\033[J", end="")
 
 def load_matrix(file_path):
     """
@@ -15,17 +16,40 @@ def load_matrix(file_path):
         print(f"Помилка зчитування файлу: {e}")
         return None
 
-def dijkstra(matrix, start_node, end_node):
+
+def dijkstra(matrix, start_node, end_node, visualize=False, delay=0.8):
     """
+    Your original Dijkstra algorithm with optional visualization.
+
     Args:
         matrix: 2D numpy array (NxN) - Матриця суміжності
         start_node: int
-        end_node: int
+        end_node:  int
+        visualize: bool - Whether to show real-time visualization
+        delay: float - Seconds between visualization steps
+
+    Returns:
+        path_tuples: list of edge tuples [(0,1), (1,3), ...]
+        distance: total shortest distance
     """
     n = matrix.shape[0]
 
     if start_node < 0 or start_node >= n or end_node < 0 or end_node >= n:
         return [], float('inf')
+
+    if visualize:
+        G = nx.DiGraph()
+        for i in range(n):
+            G.add_node(i)
+        for i in range(n):
+            for j in range(n):
+                if matrix[i][j] > 0:
+                    G.add_edge(i, j, weight=matrix[i][j])
+
+        pos = nx.spring_layout(G, seed=42, k=2)
+        plt.ion()
+        fig, ax = plt.subplots(figsize=(12, 8))
+        visited_set = set()
 
     dist = np.full(n, np.inf)
     dist[start_node] = 0
@@ -34,13 +58,68 @@ def dijkstra(matrix, start_node, end_node):
 
     pq = [(0, start_node)]
 
+    def draw_state(current_node=None):
+        if not visualize:
+            return
+
+        ax.clear()
+
+        node_colors = []
+        for node in range(n):
+            if node == start_node:
+                node_colors.append('#2ecc71')  # Green - start
+            elif node == end_node:
+                node_colors. append('#e74c3c')  # Red - end
+            elif node == current_node:
+                node_colors. append('#f1c40f')  # Yellow - current
+            elif node in visited_set:
+                node_colors.append('#9b59b6')  # Purple - visited
+            elif any(node == v for _, v in pq):
+                node_colors.append('#3498db')  # Blue - in queue
+            else:
+                node_colors.append('#ecf0f1')  # Gray - unvisited
+
+        nx.draw_networkx_edges(G, pos, ax=ax, edge_color='#cccccc',
+                               arrows=True, arrowsize=20, width=1.5,
+                               connectionstyle="arc3,rad=0.1")
+
+        nx.draw_networkx_nodes(G, pos, ax=ax, node_color=node_colors,
+                               node_size=800, edgecolors='black', linewidths=2)
+
+        edge_labels = {(u, v): f"{d['weight']:.0f}"
+                       for u, v, d in G.edges(data=True)}
+        nx.draw_networkx_edge_labels(G, pos, edge_labels, ax=ax, font_size=10)
+
+        labels = {}
+        for node in range(n):
+            d = dist[node]
+            d_str = f"{d:.0f}" if d != np.inf else "∞"
+            labels[node] = f"{node}\n[{d_str}]"
+        nx.draw_networkx_labels(G, pos, labels, ax=ax,
+                                font_size=10, font_weight='bold')
+
+        ax.axis('off')
+
+        fig.canvas.draw()
+        fig.canvas.flush_events()
+        time.sleep(delay)
+
+
     while pq:
-        current_dist, u = heapq.heappop(pq)
+        current_dist, u = heapq. heappop(pq)
 
         if current_dist > dist[u]:
             continue
 
+        if visualize:
+            if u in visited_set:
+                continue
+            visited_set.add(u)
+            draw_state(current_node=u)
+
         if u == end_node:
+            if visualize:
+                draw_state(current_node=u)
             break
 
         for v in range(n):
@@ -52,10 +131,13 @@ def dijkstra(matrix, start_node, end_node):
                 if new_dist < dist[v]:
                     dist[v] = new_dist
                     parent[v] = u
-                    # Додаємо в чергу (O(log N))
                     heapq.heappush(pq, (new_dist, v))
 
+
     if dist[end_node] == np.inf:
+        if visualize:
+            plt.ioff()
+            plt.show()
         return [], float('inf')
 
     path = []
@@ -68,68 +150,85 @@ def dijkstra(matrix, start_node, end_node):
 
     path_tuples = [(path[i], path[i+1]) for i in range(len(path)-1)]
 
+
+    if visualize:
+        ax.clear()
+
+        path_set = set(path)
+        node_colors = []
+        for node in range(n):
+            if node == start_node:
+                node_colors. append('#2ecc71')
+            elif node == end_node:
+                node_colors.append("#a02226")
+            elif node in path_set:
+                node_colors.append('#2ecc71')  # Bright green
+            else:
+                node_colors.append('#9b59b6')
+
+        nx.draw_networkx_edges(G, pos, ax=ax, edge_color='#cccccc',
+                               arrows=True, arrowsize=20, width=1.5,
+                               connectionstyle="arc3,rad=0.1")
+
+
+        nx.draw_networkx_edges(G, pos, edgelist=path_tuples, ax=ax,
+                               edge_color='#27ae60', arrows=True,
+                               arrowsize=25, width=4,
+                               connectionstyle="arc3,rad=0.1")
+
+
+        nx.draw_networkx_nodes(G, pos, ax=ax, node_color=node_colors,
+                               node_size=800, edgecolors='black', linewidths=2)
+
+
+        edge_labels = {(u, v): f"{d['weight']:.0f}"
+                       for u, v, d in G. edges(data=True)}
+        nx.draw_networkx_edge_labels(G, pos, edge_labels, ax=ax, font_size=10)
+
+        labels = {}
+        for node in range(n):
+            d = dist[node]
+            d_str = f"{d:.0f}" if d != np.inf else "∞"
+            labels[node] = f"{node}\n[{d_str}]"
+        nx.draw_networkx_labels(G, pos, labels, ax=ax,
+                                font_size=10, font_weight='bold')
+
+
+        path_str = " → ".join(map(str, path))
+        ax.set_title(f"✅ Найкоротший шлях: {path_str}\n"
+                    f"Загальна відстань: {dist[end_node]:.0f}",
+                    fontsize=14, fontweight='bold', color='green')
+        ax.axis('off')
+
+        fig.canvas.draw()
+        plt.ioff()
+        plt.show()
+
     return list(map(lambda x: (int(x[0]), int(x[1])), path_tuples)), dist[end_node]
 
-# RANDOM GRAPH GENERATION FOR TESTING ------------------------------------
 
-# def generate_graph_matrix_guaranteed_path(n, density=0.3, max_weight=10):
-#     """
-#     Генерує граф, де ГАРАНТОВАНО існує шлях від вершини 0 до n-1.
-#     """
-#     matrix = np.zeros((n, n))
+if __name__ == "__main__":
+    # Test matrix
+    matrix = np.array([
+        [0, 4, 2, 0, 0, 0],
+        [0, 0, 1, 5, 0, 0],
+        [0, 0, 0, 8, 10, 0],
+        [0, 0, 0, 0, 2, 6],
+        [0, 0, 0, 0, 0, 3],
+        [0, 0, 0, 0, 0, 0]
+    ], dtype=float)
 
-#     nodes = list(range(1, n - 1))
-#     random.shuffle(nodes) # Перемішуємо їх
+    print("Матриця суміжності:")
+    print(matrix)
+    print()
 
-#     path_nodes = [0] + nodes + [n - 1]
+    print("=== Без візуалізації ===")
+    path1, dist1 = dijkstra(matrix, 0, 5, visualize=False)
+    print(f"Шлях: {path1}")
+    print(f"Відстань: {dist1}")
+    print()
 
-#     for k in range(len(path_nodes) - 1):
-#         u = path_nodes[k]
-#         v = path_nodes[k + 1]
-#         matrix[u][v] = random.randint(1, max_weight)
-#     for i in range(n):
-#         for j in range(n):
-#             if i == j: continue
-#             if matrix[i][j] > 0:
-#                 continue
-#             if random.random() < density:
-#                 matrix[i][j] = random.randint(1, max_weight)
-
-#     return matrix
-
-
-# def check_path_weight_manually(matrix, path_tuples):
-#     """
-#     Проходиться по матриці згідно зі знайденим шляхом і сумує ваги.
-#     """
-#     calculated_weight = 0
-#     for u, v in path_tuples:
-#         w = matrix[u][v]
-#         calculated_weight += w
-
-#     return calculated_weight
-
-
-# def run_experiments():
-#     for _ in range(1):
-#         n = random.randint(1,10)
-#         density = random.random()
-#         matrix = generate_graph_matrix_guaranteed_path(n, density)
-#         print(matrix)
-
-#         path, length = dijkstra(matrix, 0, n-1)
-#         mx_path = nx.dijkstra_path(nx.from_numpy_array(matrix, create_using=nx.DiGraph), 0, n-1, weight='weight')
-#         nx_path_tuples = [(mx_path[i], mx_path[i+1]) for i in range(len(mx_path)-1)]
-
-#         print(f"Шлях: {path}  -- ")
-#         print(f"Шлях: {nx_path_tuples}  -- ")
-#         print(f"Довжина: {length}")
-
-#         if path == nx_path_tuples:
-#             print("✅ " + str(_) + " N:" +str(n-1) + " Rand: " + str(density))
-#         else:
-#             true_weight = check_path_weight_manually(matrix, nx_path_tuples)
-#             my_weight = check_path_weight_manually(matrix, path)
-#             print(f"🟥 DID NOT MATCH: {true_weight} -- {my_weight}")
-# if __name__ == "__main__":
-#     run_experiments()
+    print("=== З візуалізацією ===")
+    path2, dist2 = dijkstra(matrix, 0, 5, visualize=True, delay=1.0)
+    print(f"Шлях: {path2}")
+    print(f"Відстань: {dist2}")
