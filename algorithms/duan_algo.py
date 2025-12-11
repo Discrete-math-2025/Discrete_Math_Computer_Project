@@ -2,6 +2,9 @@ import math
 import heapq
 import numpy as np
 import random
+import networkx as nx
+import matplotlib.pyplot as plt
+
 INF = float('inf')
 
 class DuanSSSP:
@@ -304,33 +307,63 @@ def run_duan(matrix, source, target):
     path_tuples = [(path[i], path[i+1]) for i in range(len(path)-1)]
     return path_tuples, solver.dist[target]
 
-test = [[0, 5, 1, 0], [0, 0, 0, 3], [0, 2, 0, 0], [0, 0, 0, 0]]
-
-print(run_duan(np.array(test), 0, 1))
-print(run_duan(np.array(test), 0, 2))
-print(run_duan(np.array(test), 0, 3))
 
 
-def generate_sparse_graph(n: int, density: float = 2.0) -> Graph:
-    m = int(n * density)
-    graph = [[0 for _ in range(n)] for _ in range(n)]
+def generate_graph_matrix_guaranteed_path(n, density=0.3, max_weight=10):
+    """
+    Генерує граф, де ГАРАНТОВАНО існує шлях від вершини 0 до n-1.
+    """
+    matrix = np.zeros((n, n))
 
-    for i in range(n - 1):
-        weight = random.uniform(1, 10)
-        graph.add_edge(i, i + 1, weight)
+    nodes = list(range(1, n - 1))
+    random.shuffle(nodes) # Перемішуємо їх
 
-    edges_added = n - 1
-    attempts = 0
-    max_attempts = m * 10
+    path_nodes = [0] + nodes + [n - 1]
 
-    while edges_added < m and attempts < max_attempts:
-        src = random.randint(0, n - 1)
-        dst = random.randint(0, n - 1)
-        attempts += 1
+    for k in range(len(path_nodes) - 1):
+        u = path_nodes[k]
+        v = path_nodes[k + 1]
+        matrix[u][v] = random.randint(1, max_weight)
+    for i in range(n):
+        for j in range(n):
+            if i == j: continue
+            if matrix[i][j] > 0:
+                continue
+            if random.random() < density:
+                matrix[i][j] = random.randint(1, max_weight)
 
-        if src != dst and not graph.has_edge(src, dst):
-            weight = random.uniform(1, 10)
-            graph.add_edge(src, dst, weight)
-            edges_added += 1
+    return matrix
 
-    return graph
+matr = generate_graph_matrix_guaranteed_path(10, density=0.1, max_weight=100)
+print(run_duan(matr, 0, len(matr)-1))
+G = nx.from_numpy_array(np.asarray(matr), create_using=nx.DiGraph)
+pos = nx.spring_layout(G)
+nx.draw(G, pos, with_labels=True, node_color='skyblue', node_size=700, edge_color='k', linewidths=1, font_size=15)
+plt.title("Graph from Adjacency Matrix")
+plt.show()
+
+
+
+# def generate_sparse_graph(n: int, density: float = 2.0) -> Graph:
+#     m = int(n * density)
+#     graph = [[0 for _ in range(n)] for _ in range(n)]
+
+#     for i in range(n - 1):
+#         weight = random.uniform(1, 10)
+#         graph.add_edge(i, i + 1, weight)
+
+#     edges_added = n - 1
+#     attempts = 0
+#     max_attempts = m * 10
+
+#     while edges_added < m and attempts < max_attempts:
+#         src = random.randint(0, n - 1)
+#         dst = random.randint(0, n - 1)
+#         attempts += 1
+
+#         if src != dst and not graph.has_edge(src, dst):
+#             weight = random.uniform(1, 10)
+#             graph.add_edge(src, dst, weight)
+#             edges_added += 1
+
+#     return graph

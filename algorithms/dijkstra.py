@@ -50,6 +50,49 @@ def dijkstra(matrix, start_node, end_node, visualize=False, delay=0.8):
         plt.ion()
         fig, ax = plt.subplots(figsize=(12, 8))
         visited_set = set()
+        def draw_state(current_node=None):
+            ax.clear()
+
+            node_colors = []
+            for node in range(n):
+                if node == start_node:
+                    node_colors.append('#2ecc71')  # Green - start
+                elif node == end_node:
+                    node_colors. append('#e74c3c')  # Red - end
+                elif node == current_node:
+                    node_colors. append('#f1c40f')  # Yellow - current
+                elif node in visited_set:
+                    node_colors.append('#9b59b6')  # Purple - visited
+                elif any(node == v for _, v in pq):
+                    node_colors.append('#3498db')  # Blue - in queue
+                else:
+                    node_colors.append('#ecf0f1')  # Gray - unvisited
+
+            nx.draw_networkx_edges(G, pos, ax=ax, edge_color='#cccccc',
+                                arrows=True, arrowsize=20, width=1.5,
+                                connectionstyle="arc3,rad=0.1")
+
+            nx.draw_networkx_nodes(G, pos, ax=ax, node_color=node_colors,
+                                node_size=800, edgecolors='black', linewidths=2)
+
+            edge_labels = {(u, v): f"{d['weight']:.0f}"
+                        for u, v, d in G.edges(data=True)}
+            nx.draw_networkx_edge_labels(G, pos, edge_labels, ax=ax, font_size=10)
+
+            labels = {}
+            for node in range(n):
+                d = dist[node]
+                d_str = f"{d:.0f}" if d != np.inf else "∞"
+                labels[node] = f"{node}\n[{d_str}]"
+            nx.draw_networkx_labels(G, pos, labels, ax=ax,
+                                    font_size=10, font_weight='bold')
+
+            ax.axis('off')
+
+            fig.canvas.draw()
+            fig.canvas.flush_events()
+            time.sleep(delay)
+
 
     dist = np.full(n, np.inf)
     dist[start_node] = 0
@@ -58,55 +101,10 @@ def dijkstra(matrix, start_node, end_node, visualize=False, delay=0.8):
 
     pq = [(0, start_node)]
 
-    def draw_state(current_node=None):
-        if not visualize:
-            return
-
-        ax.clear()
-
-        node_colors = []
-        for node in range(n):
-            if node == start_node:
-                node_colors.append('#2ecc71')  # Green - start
-            elif node == end_node:
-                node_colors. append('#e74c3c')  # Red - end
-            elif node == current_node:
-                node_colors. append('#f1c40f')  # Yellow - current
-            elif node in visited_set:
-                node_colors.append('#9b59b6')  # Purple - visited
-            elif any(node == v for _, v in pq):
-                node_colors.append('#3498db')  # Blue - in queue
-            else:
-                node_colors.append('#ecf0f1')  # Gray - unvisited
-
-        nx.draw_networkx_edges(G, pos, ax=ax, edge_color='#cccccc',
-                               arrows=True, arrowsize=20, width=1.5,
-                               connectionstyle="arc3,rad=0.1")
-
-        nx.draw_networkx_nodes(G, pos, ax=ax, node_color=node_colors,
-                               node_size=800, edgecolors='black', linewidths=2)
-
-        edge_labels = {(u, v): f"{d['weight']:.0f}"
-                       for u, v, d in G.edges(data=True)}
-        nx.draw_networkx_edge_labels(G, pos, edge_labels, ax=ax, font_size=10)
-
-        labels = {}
-        for node in range(n):
-            d = dist[node]
-            d_str = f"{d:.0f}" if d != np.inf else "∞"
-            labels[node] = f"{node}\n[{d_str}]"
-        nx.draw_networkx_labels(G, pos, labels, ax=ax,
-                                font_size=10, font_weight='bold')
-
-        ax.axis('off')
-
-        fig.canvas.draw()
-        fig.canvas.flush_events()
-        time.sleep(delay)
 
 
     while pq:
-        current_dist, u = heapq. heappop(pq)
+        current_dist, u = heapq.heappop(pq)
 
         if current_dist > dist[u]:
             continue
