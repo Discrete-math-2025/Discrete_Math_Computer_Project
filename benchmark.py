@@ -5,9 +5,11 @@ Works with adjacency matrix (list of lists).
 
 import timeit
 import csv
+import random
 import heapq
 from functools import partial
-from data_generator import generate_benchmark_graphs
+from data_generator import generate_benchmark_graphs, generate_graph_matrix_guaranteed_path
+from algorithms.dijkstra import dijkstra
 
 INF = float("inf")
 
@@ -67,7 +69,7 @@ def compare_algorithms(matrix, algorithms):
     """
     results = {}
     for name, func in algorithms.items():
-        timer = timeit.Timer(partial(func, matrix, 0))
+        timer = timeit.Timer(partial(func, matrix, 0, random.randint(0, len(matrix))))
         times = timer.repeat(3, 5)
         results[name] = min(times) / 5
     return results
@@ -91,30 +93,10 @@ def benchmark_generated_graphs(algorithms):
     return results
 
 
-def dijkstra(matrix, source):
-    """Dijkstra for adjacency matrix."""
-    n = len(matrix)
-    dist = [INF] * n
-    dist[source] = 0
-    pq = [(0, source)]
-
-    while pq:
-        d, u = heapq. heappop(pq)
-        if d > dist[u]:
-            continue
-        for v in range(n):
-            if matrix[u][v] != INF:
-                new_dist = dist[u] + matrix[u][v]
-                if new_dist < dist[v]:
-                    dist[v] = new_dist
-                    heapq.heappush(pq, (new_dist, v))
-
-    return dist
 
 
-def duan_algorithm(matrix, source):
-    return dijkstra(matrix, source)
-
+def duan_algorithm(matrix, start, end):
+    pass
 
 
 if __name__ == "__main__":
