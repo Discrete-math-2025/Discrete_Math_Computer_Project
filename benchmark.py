@@ -7,7 +7,7 @@ import timeit
 import csv
 import heapq
 from functools import partial
-from graph_generator import generate_benchmark_graphs
+from data_generator import generate_benchmark_graphs
 
 INF = float("inf")
 
