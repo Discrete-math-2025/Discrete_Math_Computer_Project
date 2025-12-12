@@ -28,7 +28,6 @@ def dijkstra(graph, start_node, end_node):
     parent = [-1] * n
     pq = [(0, start_node)]
 
-    # --- MAIN LOOP ---
     while pq:
         current_dist, u = heapq.heappop(pq)
 
@@ -38,7 +37,6 @@ def dijkstra(graph, start_node, end_node):
         if u == end_node:
             break
 
-        # Iterate over neighbors in Adjacency List directly
         for v, weight in graph[u]:
             new_dist = current_dist + weight
 
@@ -46,12 +44,79 @@ def dijkstra(graph, start_node, end_node):
                 dist[v] = new_dist
                 parent[v] = u
                 heapq.heappush(pq, (new_dist, v))
-                # if visualize: draw_state(current_node=u, pq_items=pq)
 
     if dist[end_node] == INF:
         return [], INF
 
-    # Reconstruct Path
+    path = []
+    curr = end_node
+    while curr != -1:
+        path.append(curr)
+        curr = parent[curr]
+    path.reverse()
+
+    path_tuples = [(path[i], path[i+1]) for i in range(len(path)-1)]
+
+    return path_tuples, dist[end_node]
+
+
+def dijkstra_unoptimized(graph, start_node, end_node):
+    """
+    Unoptimized Dijkstra algorithm using Linear Search.
+    Complexity: O(N^2)
+
+    Args:
+        graph: Adjacency List [[(v, w), ...], ...]
+        start_node: int
+        end_node:  int
+
+    Returns:
+        path_tuples: list of edge tuples
+        distance: total shortest distance
+    """
+    n = len(graph)
+
+    if start_node < 0 or start_node >= n or end_node < 0 or end_node >= n:
+        return [], INF
+
+    dist = [INF] * n
+    dist[start_node] = 0
+    parent = [-1] * n
+    visited = [False] * n
+
+    # Main loop runs N times
+    for _ in range(n):
+
+        # --- THE SLOW PART (Linear Scan) ---
+        # Find unvisited node with smallest distance by checking ALL nodes
+        u = -1
+        min_val = INF
+        for i in range(n):
+            if not visited[i] and dist[i] < min_val:
+                min_val = dist[i]
+                u = i
+
+        # If no reachable node is left or target reached
+        if u == -1 or dist[u] == INF:
+            break
+
+        # Mark as visited
+        visited[u] = True
+
+        if u == end_node:
+            break
+
+        # Relax neighbors
+        for v, weight in graph[u]:
+            if not visited[v]:
+                if dist[u] + weight < dist[v]:
+                    dist[v] = dist[u] + weight
+                    parent[v] = u
+
+    # Reconstruction
+    if dist[end_node] == INF:
+        return [], INF
+
     path = []
     curr = end_node
     while curr != -1:

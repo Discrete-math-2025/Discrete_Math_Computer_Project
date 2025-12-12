@@ -1,127 +1,64 @@
-"""
-Benchmarking framework for SSSP algorithms using timeit.
-Works with adjacency matrix (list of lists).
-"""
-
 import timeit
-import csv
-import random
-import heapq
-from functools import partial
-from data_generator import generate_benchmark_graphs, generate_graph_matrix_guaranteed_path
+import matplotlib.pyplot as plt
 from algorithms.dijkstra import dijkstra
 from algorithms.duan_algo import run_duan
-import numpy as np
-import random
-import networkx as nx
-import matplotlib.pyplot as plt
+from data_generator import generate_optimized_graph
+import os
 
 
-INF = float("inf")
+def run_benchmark_suite():
+    sizes = [2, 10, 50, 250, 750, 1000, 2000, 5000, 10000, 100000]
+    fixed_density = 2
 
-# ============================================================
-# GRAPH UTILITIES
-# ============================================================
+    times_dijkstra = []
+    times_duan = []
 
-def load_graph_from_csv(filename):
-    """
-    Load graph from CSV file as adjacency matrix.
-    Expected format:  source, dest, weight
-    """
-    max_node = 0
-    edges = []
+    print(f"{'N':<10} | {'Dijkstra (ms)':<15} | {'Duan et al. (ms)':<15}")
+    print("-" * 45)
 
-    with open(filename, 'r') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            u = int(row['source'])
-            v = int(row['dest'])
-            w = int(row['weight'])
-            edges.append((u, v, w))
-            max_node = max(max_node, u, v)
+    for n in sizes:
+        # Generate graph
+        print('Generating graph')
+        matrix = generate_optimized_graph(n, avg_degree=fixed_density, max_weight=100)
 
-    n = max_node + 1
+        source = 0
+        target = n - 1
 
-    # Build matrix
-    matrix = [[INF] * n for _ in range(n)]
-    for i in range(n):
-        matrix[i][i] = 0
+        number = 5
 
-    for u, v, w in edges:
-        matrix[u][v] = w
+        t_duan = timeit.timeit(lambda: run_duan(matrix, source, target), number=number)
+        avg_duan = (t_duan / number) * 1000
+        times_duan.append(avg_duan)
 
-    return matrix
-
-
-def get_graph_stats(matrix):
-    """Get basic statistics about a graph."""
-    n = len(matrix)
-    m = sum(1 for i in range(n) for j in range(n) if matrix[i][j] != 0 and i != j)
-    return {'n': n, 'm': m, 'sparsity': round(m / n, 2) if n > 0 else 0}
-
-def benchmark_csv_file(filename, algorithms):
-    """Benchmark algorithms on a graph from CSV file."""
-    matrix = load_graph_from_csv(filename)
-    stats = get_graph_stats(matrix)
-    times = compare_algorithms(matrix, algorithms)
-
-    return {'file': filename, **stats, 'times': times}
-
-#________________________________________________________________________________________
-
-def compare_algorithms(matrix, algorithms):
-    """
-    Compare multiple algorithms on the same graph.
-    """
-    results = {}
-    for name, func in algorithms.items():
-        timer = timeit.Timer(partial(func, matrix, 0, random.randint(0, len(matrix))))
-        times = timer.repeat(3, 5)
-        results[name] = min(times) / 5
-    return results
+        t_dijk = timeit.timeit(lambda: dijkstra(matrix, source, target), number=number)
+        avg_dijk = (t_dijk / number) * 1000
+        times_dijkstra.append(avg_dijk)
 
 
 
-def benchmark_generated_graphs(algorithms):
-    """
-    Benchmark algorithms on generated graphs.
-    """
+        print(f"{n:<10} | {avg_dijk:<15.4f} | {avg_duan:<15.4f}")
 
-    graphs = generate_benchmark_graphs(1)
-    results = []
+    plot_results(sizes, times_dijkstra, times_duan, fixed_density)
 
-    for graph in graphs:
-        matrix = graph['graph']
+def plot_results(sizes, y1, y2, density):
+    plt.figure(figsize=(10, 6))
 
-        times = compare_algorithms(matrix, algorithms)
+    plt.plot(sizes, y1, marker='o', label='Dijkstra (Standard)', color='blue')
+    plt.plot(sizes, y2, marker='s', label='Duan et al. (2025)', color='red', linestyle='--')
 
-        results.append(tuple([times, times['Dijkstra'] / times['Duan']]))
-    return results
+    plt.title(f'SSSP Algorithm Comparison (Density $\\approx$ {density})')
+    plt.xlabel('Graph Size (Number of Vertices)')
+    plt.ylabel('Execution Time (ms)')
+    plt.grid(True, alpha=0.3)
+    plt.legend()
 
+    output_file = 'results/benchmark_plot.png'
+    # Ensure directory exists
+    os.makedirs('results', exist_ok=True)
 
-
-
-
-
-# matr = generate_graph_matrix_guaranteed_path(20, density=0.01, max_weight=100)
-# print(run_duan(matr, 0, len(matr)-1))
-# G = nx.from_numpy_array(np.asarray(matr), create_using=nx.DiGraph)
-# pos = nx.spring_layout(G)
-# nx.draw(G, pos, with_labels=True, node_color='skyblue', node_size=700, edge_color='k', linewidths=1, font_size=15)
-# plt.title("Graph from Adjacency Matrix")
-# plt.show()
+    plt.savefig(output_file)
+    plt.show()
+    print(f"\n✅ Plot saved to {output_file}")
 
 if __name__ == "__main__":
-
-
-    algorithms = {
-        'Dijkstra':  dijkstra,
-        'Duan':  run_duan
-    }
-
-
-    results_ = benchmark_generated_graphs(algorithms)
-
-    print(results_)
-
-    print(f"\n✅ Benchmarked {len(results_)} graphs")
+    run_benchmark_suite()
