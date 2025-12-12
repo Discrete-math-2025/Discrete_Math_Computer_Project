@@ -36,3 +36,5 @@ def generate_graph(n, avg_degree=2.5, max_weight=10):
             adj_list[u].append((v, w))
 
     return adj_list
+
+print(generate_graph(50, 2, 50))
