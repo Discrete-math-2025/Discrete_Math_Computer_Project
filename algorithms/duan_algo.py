@@ -302,30 +302,3 @@ def run_duan(matrix, source, target):
 
     path_tuples = [(path[i], path[i+1]) for i in range(len(path)-1)]
     return path_tuples, solver.dist[target]
-
-
-
-
-# def generate_sparse_graph(n: int, density: float = 2.0) -> Graph:
-#     m = int(n * density)
-#     graph = [[0 for _ in range(n)] for _ in range(n)]
-
-#     for i in range(n - 1):
-#         weight = random.uniform(1, 10)
-#         graph.add_edge(i, i + 1, weight)
-
-#     edges_added = n - 1
-#     attempts = 0
-#     max_attempts = m * 10
-
-#     while edges_added < m and attempts < max_attempts:
-#         src = random.randint(0, n - 1)
-#         dst = random.randint(0, n - 1)
-#         attempts += 1
-
-#         if src != dst and not graph.has_edge(src, dst):
-#             weight = random.uniform(1, 10)
-#             graph.add_edge(src, dst, weight)
-#             edges_added += 1
-
-#     return graph
