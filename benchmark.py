@@ -2,13 +2,14 @@ import argparse
 import timeit
 import matplotlib.pyplot as plt
 import os
+
 from algorithms.dijkstra import dijkstra
 from algorithms.duan_algo import run_duan
 from data_generator import generate_graph
 
 def benchmark_vary_size(sizes, fixed_density, trials):
     """
-    Graph Size (N) with Fixed Density.
+    Experiment 1: Vary Graph Size (N) with Fixed Density.
     """
     print(f"\n[Experiment: Varying Size] Density={fixed_density}, Trials={trials}")
     print(f"{'N':<10} | {'Dijkstra (ms)':<15} | {'Duan (ms)':<15}")
@@ -18,13 +19,17 @@ def benchmark_vary_size(sizes, fixed_density, trials):
     times_duan = []
 
     for n in sizes:
+        # Generate Graph (Adjacency List)
+        # Note: avg_degree corresponds to your 'density' parameter
         graph = generate_graph(n, avg_degree=fixed_density, max_weight=100)
         source, target = 0, n - 1
 
+        # Benchmark Duan
         t_duan = timeit.timeit(lambda: run_duan(graph, source, target), number=trials)
         avg_duan = (t_duan / trials) * 1000
         times_duan.append(avg_duan)
 
+        # Benchmark Dijkstra
         t_dijk = timeit.timeit(lambda: dijkstra(graph, source, target), number=trials)
         avg_dijk = (t_dijk / trials) * 1000
         times_dijkstra.append(avg_dijk)
@@ -81,6 +86,7 @@ def plot_results(x_values, y_dijk, y_duan, title, xlabel, filename):
     output_path = os.path.join('results', filename)
     plt.savefig(output_path)
     print(f"✅ Plot saved to {output_path}")
+    plt.show()
 
 def main():
     parser = argparse.ArgumentParser(description="Benchmark Dijkstra vs Duan et al. (2025)")
@@ -99,9 +105,8 @@ def main():
     parser.add_argument('--densities', type=float, nargs='+',
                         default=[1.1, 2.0, 4.0, 8.0, 16.0],
                         help="List of densities (avg degree) to test")
-
     parser.add_argument('--trials', type=int, default=5,
-                        help="Number of trials per run for average")
+                        help="Number of trials per run for averaging")
 
     args = parser.parse_args()
 
