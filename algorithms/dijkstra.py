@@ -84,11 +84,8 @@ def dijkstra_unoptimized(graph, start_node, end_node):
     parent = [-1] * n
     visited = [False] * n
 
-    # Main loop runs N times
     for _ in range(n):
 
-        # --- THE SLOW PART (Linear Scan) ---
-        # Find unvisited node with smallest distance by checking ALL nodes
         u = -1
         min_val = INF
         for i in range(n):
@@ -96,24 +93,20 @@ def dijkstra_unoptimized(graph, start_node, end_node):
                 min_val = dist[i]
                 u = i
 
-        # If no reachable node is left or target reached
         if u == -1 or dist[u] == INF:
             break
 
-        # Mark as visited
         visited[u] = True
 
         if u == end_node:
             break
 
-        # Relax neighbors
         for v, weight in graph[u]:
             if not visited[v]:
                 if dist[u] + weight < dist[v]:
                     dist[v] = dist[u] + weight
                     parent[v] = u
 
-    # Reconstruction
     if dist[end_node] == INF:
         return [], INF
 

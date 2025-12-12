@@ -7,36 +7,20 @@ INF = float('inf')
 class DuanSSSP:
     def __init__(self, graph_input, source):
         """
-        Initialize the Duan et al. (2025) SSSP algorithm context.
-        Accepts either adjacency matrix (with 0 / INF for missing edges)
-        or adjacency list of (v, w) tuples.
+        Initialize the deuan algo class vars
+        Accepts adjecency lists
         """
         self.n = len(graph_input)
         self.source = source
 
-        # Normalize to adjacency list of (v, w) to simplify later code
-        self.adj = [[] for _ in range(self.n)]
+        self.adj = graph_input
 
-        # Detect adjacency list vs. matrix
-        is_adj_list = False
-        if self.n > 0 and graph_input[0]:
-            is_adj_list = isinstance(graph_input[0][0], (list, tuple))
-
-        if is_adj_list:
-            self.adj = graph_input
-        else:
-            for u in range(self.n):
-                for v, w in enumerate(graph_input[u]):
-                    if u == v:
-                        continue
-                    if w != 0 and w != INF:
-                        self.adj[u].append((v, w))
 
         self.dist = [float('inf')] * self.n
         self.dist[source] = 0
         self.pred = [-1] * self.n
 
-        # Calculate parameters k and t based on n (Section 3.1)
+        # Calculate parameters k and t based on n (3.1)
         if self.n > 1:
             log_n = math.log2(self.n)
             self.k = max(2, int(log_n ** (1/3)))
@@ -52,7 +36,6 @@ class DuanSSSP:
         S = {self.source}
         B = INF
 
-        # Initial call to BMSSP with l = ceil(log n / t)
         self.bmssp(self.max_level, B, S)
 
         return self.dist
@@ -62,7 +45,7 @@ class DuanSSSP:
         Algorithm 3: Bounded Multi-Source Shortest Path.
         Recursive divide-and-conquer function.
         """
-        # 1. Base Case (Level 0) -> Run Dijkstra-like procedure
+        # 1. Base Case (Level 0) then run Dijkstra-like procedure
         if level == 0:
             return self.base_case(B, S)
 
@@ -82,30 +65,26 @@ class DuanSSSP:
         if P:
              B_prev_prime = min(self.dist[x] for x in P)
         elif S:
-             # Fallback if P is empty but S is not
-             # Using generator expression with default for safety
              dists = [self.dist[x] for x in S]
              if dists:
                 B_prev_prime = min(dists)
 
         U = set()
 
-        # Threshold for partial execution
+        #  for partial execution
         threshold = self.k * (2 ** (level * self.t))
 
         # 4. Main Loop
         while len(U) < threshold and not D.is_empty():
-            # Pull subset Si and bound Bi
             Bi, Si = D.pull()
 
-            # Recursive Call
+            # recursion that causes bottlneck
             Bi_prime, Ui = self.bmssp(level - 1, Bi, Si)
 
-            # Union results
             U.update(Ui)
 
             # 5. Relax edges from Ui and update D
-            K = [] # Temporary storage for batch prepend (standard list)
+            K = []
 
             # Identify candidates for Batch Prepend from Si
             si_batch_candidates = []
@@ -118,14 +97,12 @@ class DuanSSSP:
                 for v, weight in self.adj[u]:
                     new_dist = self.dist[u] + weight
 
-                    # Remark 3.4: equality required
+                    # Remark 3.4: equality needed
                     if new_dist <= self.dist[v]:
                         self.dist[v] = new_dist
                         self.pred[v] = u
-                        # Case (a): Direct Insert
                         if Bi <= new_dist < B:
                             D.insert(v, new_dist)
-                        # Case (b): Add to K for Batch Prepend
                         elif Bi_prime <= new_dist < Bi:
                             K.append((v, new_dist))
 
@@ -134,11 +111,8 @@ class DuanSSSP:
             batch_list = K + si_batch_candidates
             if batch_list:
                 D.batch_prepend(batch_list)
-
-            # Update B_prev for next iteration tracking
             B_prev_prime = Bi_prime
 
-        # 7. Final Return Logic
         final_B_prime = B_prev_prime
         if B < final_B_prime:
             final_B_prime = B
@@ -158,7 +132,7 @@ class DuanSSSP:
         W = set(S)
         Wi_prev = set(S)
 
-        # Relax for k steps
+        # Relax for k steps, bellman-ford-like?
         for _ in range(self.k):
             Wi = set()
             for u in Wi_prev:
@@ -171,11 +145,11 @@ class DuanSSSP:
             W.update(Wi)
             Wi_prev = Wi
 
-            # Early exit if W grows too large
+            # if w is too big
             if len(W) > self.k * len(S):
                 return S, W
 
-        # Use the last frontier as pivots so recursion advances beyond S
+        # Use the last frontier as pivots so recursion goes beyond S
         P = Wi_prev if Wi_prev else S
         return P, W
 
@@ -207,11 +181,9 @@ class DuanSSSP:
                 if new_dist < self.dist[v]:
                     self.dist[v] = new_dist
                     self.pred[v] = u
-                # Use <= to propagate equal-length paths so downstream relaxations run
                 if new_dist <= self.dist[v] and new_dist < B:
                     heapq.heappush(pq, (new_dist, v))
 
-        # Return bound B' (unchanged here) and nodes improved in this call
         U_ret = {v for v in touched if self.dist[v] < B}
         return B, U_ret
 
@@ -260,7 +232,6 @@ class DataStructureD:
 
 
 
-        # Peek at next valid element
         while self.pq:
             val, key = self.pq[0]
             if key in self.in_heap and self.in_heap[key] == val:
@@ -271,6 +242,7 @@ class DataStructureD:
 
     def is_empty(self):
         return not self.in_heap
+
 def run_duan(matrix, source, target):
     solver = DuanSSSP(matrix, source)
     solver.solve()
