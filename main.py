@@ -113,7 +113,7 @@ def main():
     duan_path, duan_dist = run_duan(graph, args.source, target)
     duan_time = (time.perf_counter() - start_t) * 1000
 
-    duan_status = "✅ Match" if duan_dist == nx_dist else f"❌ Fail ({duan_dist})"
+    duan_status = "Match" if duan_dist == nx_dist else f"Fail ({duan_dist})"
     print(f"{'Duan et al. (2025)':<20} | {duan_time:<10.4f} | {duan_dist:<10} | {duan_status}")
     print("-" * 75)
 
@@ -122,7 +122,7 @@ def main():
         print(f"NetworkX Dist: {nx_dist}")
         print(f"Duan Dist:     {duan_dist}")
     elif nx_dist != float('inf'):
-        print(f"\nPath Found! Length: {len(nx_path)} edges")
+        print(f"\nPath: {nx_path}")
 
 if __name__ == "__main__":
     main()
