@@ -2,8 +2,6 @@ import argparse
 import timeit
 import matplotlib.pyplot as plt
 import os
-
-
 from algorithms.dijkstra import dijkstra
 from algorithms.duan_algo import run_duan
 from data_generator import generate_graph
@@ -103,7 +101,7 @@ def main():
                         help="List of densities (avg degree) to test")
 
     parser.add_argument('--trials', type=int, default=5,
-                        help="Number of trials per run for averaging")
+                        help="Number of trials per run for average")
 
     args = parser.parse_args()
 
