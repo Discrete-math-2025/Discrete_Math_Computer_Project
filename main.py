@@ -2,10 +2,9 @@ import argparse
 import time
 import networkx as nx
 
-# Import your modules
 from algorithms.dijkstra import dijkstra
 from algorithms.duan_algo import run_duan
-from data_generator import generate_optimized_graph
+from data_generator import generate_graph
 
 def run_networkx(adj_list, source, target):
     """
@@ -39,19 +38,16 @@ def main():
     args = parser.parse_args()
 
     print(f"Generating Graph (N={args.n}, Avg Degree={args.density})...")
-    # Generate Adjacency List
-    graph = generate_optimized_graph(args.n, args.density)
+    graph = generate_graph(args.n, args.density)
     source, target = 0, args.n - 1
 
     print("-" * 60)
     print(f"{'Algorithm':<20} | {'Time (ms)':<10} | {'Dist':<10} | {'Status'}")
     print("-" * 60)
 
-    # 1. Run NetworkX
     nx_path, nx_dist, nx_dur = run_networkx(graph, source, target)
     print(f"{'NetworkX (Ref)':<20} | {nx_dur:<10.4f} | {nx_dist:<10} | ✅ Verified")
 
-    # 2. Run Dijkstra (Your Impl)
     start = time.time()
     d_path, d_dist = dijkstra(graph, source, target)
     d_dur = (time.time() - start) * 1000
@@ -59,7 +55,6 @@ def main():
     d_status = "✅ Match" if d_dist == nx_dist else f"❌ Fail ({d_dist})"
     print(f"{'Dijkstra (Custom)':<20} | {d_dur:<10.4f} | {d_dist:<10} | {d_status}")
 
-    # 3. Run Duan et al. (Your Impl)
     start = time.time()
     duan_path, duan_dist = run_duan(graph, source, target)
     duan_dur = (time.time() - start) * 1000
@@ -69,7 +64,7 @@ def main():
     print("-" * 60)
 
     if d_dist != duan_dist:
-        print("\n⚠️ WARNING: Algorithms found different distances!")
+        print("Algorithms found different distances!")
         print(f"Dijkstra Path Len: {len(d_path)}")
         print(f"Duan Path Len:     {len(duan_path)}")
 
