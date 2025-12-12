@@ -20,7 +20,6 @@ class DuanSSSP:
         self.dist[source] = 0
         self.pred = [-1] * self.n
 
-        # Calculate parameters k and t based on n (3.1)
         if self.n > 1:
             log_n = math.log2(self.n)
             self.k = max(2, int(log_n ** (1/3)))
@@ -45,19 +44,14 @@ class DuanSSSP:
         Algorithm 3: Bounded Multi-Source Shortest Path.
         Recursive divide-and-conquer function.
         """
-        # 1. Base Case (Level 0) then run Dijkstra-like procedure
         if level == 0:
             return self.base_case(B, S)
 
-        # 2. Find Pivots (Algorithm 1)
         P, W = self.find_pivots(B, S)
 
-        # 3. Initialize Data Structure D
-        # M = 2^((l-1)t)
         M = 2 ** ((level - 1) * self.t)
         D = DataStructureD(M, B)
 
-        # Insert pivots into D
         for x in P:
             D.insert(x, self.dist[x])
 
@@ -71,33 +65,26 @@ class DuanSSSP:
 
         U = set()
 
-        #  for partial execution
         threshold = self.k * (2 ** (level * self.t))
 
-        # 4. Main Loop
         while len(U) < threshold and not D.is_empty():
             Bi, Si = D.pull()
 
-            # recursion that causes bottlneck
             Bi_prime, Ui = self.bmssp(level - 1, Bi, Si)
 
             U.update(Ui)
 
-            # 5. Relax edges from Ui and update D
             K = []
 
-            # Identify candidates for Batch Prepend from Si
             si_batch_candidates = []
             for x in Si:
                 if Bi_prime <= self.dist[x] < Bi:
                     si_batch_candidates.append((x, self.dist[x]))
 
-            # Edge Relaxation
             for u in Ui:
                 for v, weight in self.adj[u]:
                     new_dist = self.dist[u] + weight
 
-                    # Remark 3.4: equality needed
                     if new_dist <= self.dist[v]:
                         self.dist[v] = new_dist
                         self.pred[v] = u
@@ -106,8 +93,6 @@ class DuanSSSP:
                         elif Bi_prime <= new_dist < Bi:
                             K.append((v, new_dist))
 
-            # 6. Batch Prepend
-            # Combine K and valid elements from Si
             batch_list = K + si_batch_candidates
             if batch_list:
                 D.batch_prepend(batch_list)
@@ -117,7 +102,6 @@ class DuanSSSP:
         if B < final_B_prime:
             final_B_prime = B
 
-        # Add remaining valid vertices from W (from FindPivots)
         for w_node in W:
             if self.dist[w_node] < final_B_prime:
                 U.add(w_node)
@@ -132,7 +116,6 @@ class DuanSSSP:
         W = set(S)
         Wi_prev = set(S)
 
-        # Relax for k steps, bellman-ford-like?
         for _ in range(self.k):
             Wi = set()
             for u in Wi_prev:
@@ -145,11 +128,9 @@ class DuanSSSP:
             W.update(Wi)
             Wi_prev = Wi
 
-            # if w is too big
             if len(W) > self.k * len(S):
                 return S, W
 
-        # Use the last frontier as pivots so recursion goes beyond S
         P = Wi_prev if Wi_prev else S
         return P, W
 
