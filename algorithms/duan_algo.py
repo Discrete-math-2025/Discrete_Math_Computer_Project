@@ -1,9 +1,5 @@
 import math
 import heapq
-import numpy as np
-import random
-import networkx as nx
-import matplotlib.pyplot as plt
 
 INF = float('inf')
 
@@ -307,40 +303,6 @@ def run_duan(matrix, source, target):
     path_tuples = [(path[i], path[i+1]) for i in range(len(path)-1)]
     return path_tuples, solver.dist[target]
 
-
-
-def generate_graph_matrix_guaranteed_path(n, density=0.3, max_weight=10):
-    """
-    Генерує граф, де ГАРАНТОВАНО існує шлях від вершини 0 до n-1.
-    """
-    matrix = np.zeros((n, n))
-
-    nodes = list(range(1, n - 1))
-    random.shuffle(nodes) # Перемішуємо їх
-
-    path_nodes = [0] + nodes + [n - 1]
-
-    for k in range(len(path_nodes) - 1):
-        u = path_nodes[k]
-        v = path_nodes[k + 1]
-        matrix[u][v] = random.randint(1, max_weight)
-    for i in range(n):
-        for j in range(n):
-            if i == j: continue
-            if matrix[i][j] > 0:
-                continue
-            if random.random() < density:
-                matrix[i][j] = random.randint(1, max_weight)
-
-    return matrix
-
-matr = generate_graph_matrix_guaranteed_path(10, density=0.1, max_weight=100)
-print(run_duan(matr, 0, len(matr)-1))
-G = nx.from_numpy_array(np.asarray(matr), create_using=nx.DiGraph)
-pos = nx.spring_layout(G)
-nx.draw(G, pos, with_labels=True, node_color='skyblue', node_size=700, edge_color='k', linewidths=1, font_size=15)
-plt.title("Graph from Adjacency Matrix")
-plt.show()
 
 
 

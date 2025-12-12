@@ -10,6 +10,12 @@ import heapq
 from functools import partial
 from data_generator import generate_benchmark_graphs, generate_graph_matrix_guaranteed_path
 from algorithms.dijkstra import dijkstra
+from algorithms.duan_algo import run_duan
+import numpy as np
+import random
+import networkx as nx
+import matplotlib.pyplot as plt
+
 
 INF = float("inf")
 
@@ -81,7 +87,7 @@ def benchmark_generated_graphs(algorithms):
     Benchmark algorithms on generated graphs.
     """
 
-    graphs = generate_benchmark_graphs(num_runs=2)
+    graphs = generate_benchmark_graphs(1)
     results = []
 
     for graph in graphs:
@@ -89,22 +95,28 @@ def benchmark_generated_graphs(algorithms):
 
         times = compare_algorithms(matrix, algorithms)
 
-        results.append(tuple([graph['n'], graph['m'], times, times['Dijkstra'] / times['Duan']]))
+        results.append(tuple([times, times['Dijkstra'] / times['Duan']]))
     return results
 
 
 
 
-def duan_algorithm(matrix, start, end):
-    pass
 
+
+# matr = generate_graph_matrix_guaranteed_path(20, density=0.01, max_weight=100)
+# print(run_duan(matr, 0, len(matr)-1))
+# G = nx.from_numpy_array(np.asarray(matr), create_using=nx.DiGraph)
+# pos = nx.spring_layout(G)
+# nx.draw(G, pos, with_labels=True, node_color='skyblue', node_size=700, edge_color='k', linewidths=1, font_size=15)
+# plt.title("Graph from Adjacency Matrix")
+# plt.show()
 
 if __name__ == "__main__":
 
 
     algorithms = {
         'Dijkstra':  dijkstra,
-        'Duan':  duan_algorithm
+        'Duan':  run_duan
     }
 
 
