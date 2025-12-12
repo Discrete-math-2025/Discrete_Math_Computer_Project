@@ -14,14 +14,9 @@ class DuanSSSP:
 
         # Convert Adjacency Matrix to Adjacency List for O(m) performance
         # Using standard list of lists instead of defaultdict
-        self.adj = [[] for _ in range(self.n)]
-        for u in range(self.n):
-            for v, w in enumerate(matrix[u]):
-                if w != INF and w != 0: # Assuming 0 is no-edge or self-loop
-                    self.adj[u].append((v, w))
+        self.adj = matrix
 
-        # Global distance and predecessor arrays
-        self.dist = [INF] * self.n
+        self.dist = [float('inf')] * self.n
         self.dist[source] = 0
         self.pred = [-1] * self.n
 

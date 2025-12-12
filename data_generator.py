@@ -7,49 +7,72 @@ import networkx as nx
 import math
 import numpy as np
 import random
-# INF = float('inf')
 
 
-# def generate_graph(n, m, directed=True, min_w=1, max_w=100):
-#     """
-#     Generate a random directed graph with n vertices and m edges.
+import networkx as nx
+import random
 
-#     Returns:
-#         adjacency matrix as list of lists
-#         matrix[u][v] = weight if edge exists, INF otherwise
-#     """
-#     G = nx.gnm_random_graph(n, m, directed=directed)
+def generate_optimized_graph(n, avg_degree=2.5, max_weight=10):
+    """
+    Generates a sparse graph using NetworkX and returns an Adjacency List.
+    Complexity: O(M) instead of O(N^2).
+    """
+    # 1. Create Graph
+    G = nx.DiGraph()
+    G.add_nodes_from(range(n))
 
-#     matrix = [[INF] * n for _ in range(n)]
+    # 2. Add Hamiltonian Path (Guaranteed Path 0 -> ... -> n-1)
+    # Shuffle internal nodes to ensure randomness
+    nodes = list(range(1, n - 1))
+    random.shuffle(nodes)
+    path_nodes = [0] + nodes + [n - 1]
 
-#     for i in range(n):
-#         matrix[i][i] = 0
+    nx.add_path(G, path_nodes)
 
-#     for (u, v) in G.edges():
-#         matrix[u][v] = random.randint(min_w, max_w)
+    # 3. Add Random Edges efficiently
+    # Calculate needed edges
+    target_m = int(n * avg_degree)
+    current_m = n - 1
+    needed = target_m - current_m
 
-#     return matrix
-# print(generate_graph(10, 10))
+    if needed > 0:
+        # gnm_random_graph is highly optimized
+        R = nx.gnm_random_graph(n, needed, directed=True)
+        G.add_edges_from(R.edges())
+
+    # 4. Assign Weights & Convert to Adjacency List
+    # adj_list[u] = [(v, weight), ...]
+    adj_list = [[] for _ in range(n)]
+
+    # G.adjacency() is fast
+    for u, neighbors in G.adjacency():
+        for v, attr in neighbors.items():
+            # Use existing weight or assign random if new
+            w = attr.get('weight', random.randint(1, max_weight))
+            adj_list[u].append((v, w))
+
+    return adj_list
 
 
 def generate_numpy_graph(n, avg_degree=3, max_weight=10):
     """
-    Generates a sparse graph with a guaranteed Hamiltonian path from 0 to n-1.
+    Generates a sparse graph (List of Lists) with a guaranteed
+    Hamiltonian path from 0 to n-1.
+    NO NumPy required.
 
     Args:
         n (int): Number of vertices.
-        avg_degree (float): Average number of edges per node (sparsity control).
-                            For sparse graphs, keep this low (e.g., 2, 3, 5).
-                            Total edges m approx n * avg_degree.
-        max_weight (int): Maximum edge weight.
+        avg_degree (float): Average edges per node.
+        max_weight (int): Max edge weight.
 
     Returns:
-        np.ndarray: Adjacency matrix (NxN).
+        list: NxN adjacency matrix (list of lists).
     """
-    # 1. Initialize empty matrix
-    matrix = np.zeros((n, n))
+    # 1. Initialize matrix with zeros using standard lists
+    # This creates an N x N grid of 0s
+    matrix = [[0] * n for _ in range(n)]
 
-    # 2. Create the Guaranteed Path (Hamiltonian: visits all nodes)
+    # 2. Create the Guaranteed Path (Hamiltonian)
     # This ensures graph is connected and path 0 -> n-1 exists.
     nodes = list(range(1, n - 1))
     random.shuffle(nodes)
@@ -62,33 +85,25 @@ def generate_numpy_graph(n, avg_degree=3, max_weight=10):
         matrix[u][v] = random.randint(1, max_weight)
 
     # 3. Add Random Edges (Sparse Method)
-    # We want total edges m = n * avg_degree
+    # We want total edges m approx n * avg_degree
     target_m = int(n * avg_degree)
     current_m = n - 1  # We already added n-1 edges for the path
 
-    # Generate remaining edges efficiently using NumPy
     if current_m < target_m:
         needed = target_m - current_m
 
-        # Generate 'needed' random pairs.
-        # Note: This might generate duplicates or self-loops, but for
-        # sparse graphs (needed << N^2), collisions are rare enough to ignore
-        # or handle simply.
+        # Pure Python random generation
         while needed > 0:
-            # Generate a batch of random coordinates
-            us = np.random.randint(0, n, size=needed)
-            vs = np.random.randint(0, n, size=needed)
+            u = random.randint(0, n - 1)
+            v = random.randint(0, n - 1)
 
-            for u, v in zip(us, vs):
-                if u == v: continue            # No self-loops
-                if matrix[u][v] > 0: continue  # Edge already exists
+            if u == v: continue            # No self-loops
+            if matrix[u][v] > 0: continue  # Edge already exists
 
-                matrix[u][v] = random.randint(1, max_weight)
-                needed -= 1
-                if needed == 0: break
+            matrix[u][v] = random.randint(1, max_weight)
+            needed -= 1
 
     return matrix
-
 # def check_path_weight_manually(matrix, path_tuples):
 #     """
 #     Проходиться по матриці згідно зі знайденим шляхом і сумує ваги.
