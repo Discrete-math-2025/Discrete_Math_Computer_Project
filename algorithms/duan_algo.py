@@ -290,3 +290,92 @@ def run_duan(matrix, source, target):
 
     path_tuples = [(path[i], path[i+1]) for i in range(len(path)-1)]
     return path_tuples, solver.dist[target]
+<<<<<<< Updated upstream
+=======
+
+test = [[0, 5, 1, 0], [0, 0, 0, 3], [0, 2, 0, 0], [0, 0, 0, 0]]
+
+print(run_duan(np.array(test), 0, 1))
+print(run_duan(np.array(test), 0, 2))
+print(run_duan(np.array(test), 0, 3))
+
+
+def generate_sparse_graph(n: int, density: float = 2.0) -> Graph:
+    m = int(n * density)
+    graph = [[0 for _ in range(n)] for _ in range(n)]
+
+    for i in range(n - 1):
+        weight = random.uniform(1, 10)
+        graph.add_edge(i, i + 1, weight)
+
+    edges_added = n - 1
+    attempts = 0
+    max_attempts = m * 10
+
+    while edges_added < m and attempts < max_attempts:
+        src = random.randint(0, n - 1)
+        dst = random.randint(0, n - 1)
+        attempts += 1
+
+        if src != dst and not graph.has_edge(src, dst):
+            weight = random.uniform(1, 10)
+            graph.add_edge(src, dst, weight)
+            edges_added += 1
+
+    return graph
+
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="Run Duan et al. (2025) SSSP algorithm"
+    )
+    parser.add_argument(
+        "--matrix",
+        type=str,
+        help="Path to .txt file containing adjacency matrix (space-separated rows)"
+    )
+    parser.add_argument(
+        "--source",
+        type=int,
+        required=True,
+        help="Source vertex"
+    )
+    parser.add_argument(
+        "--target",
+        type=int,
+        required=True,
+        help="Target vertex"
+    )
+    parser.add_argument(
+        "--generate",
+        type=int,
+        help="Generate random sparse graph with n nodes instead of reading matrix file"
+    )
+    parser.add_argument(
+        "--density",
+        type=float,
+        default=2.0,
+        help="Density parameter for random graph generation"
+    )
+    args = parser.parse_args()
+    if args.generate is not None:
+        print(f"Generating random graph: n={args.generate}, density={args.density}")
+        g = generate_sparse_graph(args.generate, args.density)
+        matrix = np.array(g.to_adjacency_matrix(), dtype=float)
+    else:
+        if args.matrix is None:
+            raise ValueError(
+                "You must provide --matrix file unless you use --generate"
+            )
+
+        print(f"Loading matrix from {args.matrix}")
+        matrix = np.loadtxt(args.matrix)
+        matrix = np.array(matrix, dtype=float)
+    path, dist = run_duan(matrix, args.source, args.target)
+
+    print("\n=== RESULT ===")
+    print("Shortest distance:", dist)
+    print("Path edges:", path)
+>>>>>>> Stashed changes
