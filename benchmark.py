@@ -58,7 +58,7 @@ def plot_results(sizes, y1, y2, density):
 
     plt.savefig(output_file)
     plt.show()
-    print(f"\n✅ Plot saved to {output_file}")
+    print(f"\nPlot saved to {output_file}")
 
 if __name__ == "__main__":
     run_benchmark_suite()
