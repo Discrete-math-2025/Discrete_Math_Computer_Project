@@ -1,96 +1,77 @@
 import argparse
-import pandas as pd
-import matplotlib.pyplot as plt
+import time
+import networkx as nx
 
-def plot_results_from_csv(csv_path, save_path=None, show=False):
+# Import your modules
+from algorithms.dijkstra import dijkstra
+from algorithms.duan_algo import run_duan
+from data_generator import generate_optimized_graph
+
+def run_networkx(adj_list, source, target):
     """
-    Читає CSV з колонками size, time_dijkstra, time_duan
-    Будує графік порівняння.
+    Ground Truth: Runs NetworkX built-in Dijkstra.
+    Converts your Adjacency List -> NetworkX Graph.
     """
+    G = nx.DiGraph()
+    n = len(adj_list)
+    G.add_nodes_from(range(n))
+
+    for u in range(n):
+        for v, w in adj_list[u]:
+            G.add_edge(u, v, weight=w)
 
     try:
-        df = pd.read_csv(csv_path)
-    except Exception as e:
-        print(f"File reading error: {e}")
-        return
+        start = time.time()
+        path = nx.dijkstra_path(G, source, target, weight='weight')
+        dist = nx.dijkstra_path_length(G, source, target, weight='weight')
+        dur = (time.time() - start) * 1000
 
-    required = {"size", "time_dijkstra", "time_duan"}
-    if not required.issubset(df.columns):
-        print("No needed columns")
-        return
+        # Convert path [0, 5, 10] -> [(0, 5), (5, 10)]
+        path_tuples = [(path[i], path[i+1]) for i in range(len(path)-1)]
+        return path_tuples, dist, dur
+    except nx.NetworkXNoPath:
+        return [], float('inf'), 0.0
 
-    sizes = df["size"]
-    times_dijkstra = df["time_dijkstra"]
-    times_duan = df["time_duan"]
-
-    plt.figure(figsize=(10, 6))
-    plt.plot(sizes, times_dijkstra, marker='o', label='Dijkstra', linewidth=2)
-    plt.plot(sizes, times_duan, marker='s', label='Duan et al.', linestyle='--', linewidth=2)
-
-    plt.title("Порівняння алгоритмів Dijkstra та Duan")
-    plt.xlabel("Розмір графа (N)")
-    plt.ylabel("Час виконання (мс)")
-    plt.grid(True, alpha=0.3)
-    plt.legend()
-
-    if save_path:
-        plt.savefig(save_path)
-        print(f"Graph saved in {save_path}")
-
-    if show:
-        plt.show()
-
-
-def build_arg_parser():
-    parser = argparse.ArgumentParser(
-        description="Benchmark + Visualization для SSSP алгоритмів"
-    )
-
-    parser.add_argument(
-        "--mode",
-        choices=["benchmark", "visualize"],
-        required=True,
-        help="Режим роботи: benchmark або visualize"
-    )
-
-    parser.add_argument(
-        "--csv",
-        type=str,
-        help="Шлях до CSV файлу з результатами (для visualize)"
-    )
-
-    parser.add_argument(
-        "--save",
-        type=str,
-        help="Куди зберегти графік (PNG)"
-    )
-
-    parser.add_argument(
-        "--show",
-        action="store_true",
-        help="Показати графік на екрані"
-    )
-
-    return parser
-
-if __name__ == "__main__":
-    parser = build_arg_parser()
+def main():
+    parser = argparse.ArgumentParser(description="UCU Discrete Math Project: SSSP Comparison")
+    parser.add_argument("--n", type=int, default=1000, help="Number of vertices")
+    parser.add_argument("--density", type=float, default=2.5, help="Average degree (sparsity)")
     args = parser.parse_args()
 
-    # ModeBenchmark
-    if args.mode == "benchmark":
-        print("Starting benchmark...")
-        from benchmark import run_benchmark_suite
-        run_benchmark_suite()
+    print(f"Generating Graph (N={args.n}, Avg Degree={args.density})...")
+    # Generate Adjacency List
+    graph = generate_optimized_graph(args.n, args.density)
+    source, target = 0, args.n - 1
 
-    # ModeVisualization
-    elif args.mode == "visualize":
-        if not args.csv:
-            print("No csv path.")
-        else:
-            print(f"Plotting graph with {args.csv} ...")
-            plot_results_from_csv(
-                csv_path=args.csv,
-                save_path=args.save,
-                show=args.show
-            )
+    print("-" * 60)
+    print(f"{'Algorithm':<20} | {'Time (ms)':<10} | {'Dist':<10} | {'Status'}")
+    print("-" * 60)
+
+    # 1. Run NetworkX
+    nx_path, nx_dist, nx_dur = run_networkx(graph, source, target)
+    print(f"{'NetworkX (Ref)':<20} | {nx_dur:<10.4f} | {nx_dist:<10} | ✅ Verified")
+
+    # 2. Run Dijkstra (Your Impl)
+    start = time.time()
+    d_path, d_dist = dijkstra(graph, source, target)
+    d_dur = (time.time() - start) * 1000
+
+    d_status = "✅ Match" if d_dist == nx_dist else f"❌ Fail ({d_dist})"
+    print(f"{'Dijkstra (Custom)':<20} | {d_dur:<10.4f} | {d_dist:<10} | {d_status}")
+
+    # 3. Run Duan et al. (Your Impl)
+    start = time.time()
+    duan_path, duan_dist = run_duan(graph, source, target)
+    duan_dur = (time.time() - start) * 1000
+
+    duan_status = "✅ Match" if duan_dist == nx_dist else f"❌ Fail ({duan_dist})"
+    print(f"{'Duan et al. (2025)':<20} | {duan_dur:<10.4f} | {duan_dist:<10} | {duan_status}")
+    print("-" * 60)
+
+    if d_dist != duan_dist:
+        print("\n⚠️ WARNING: Algorithms found different distances!")
+        print(f"Dijkstra Path Len: {len(d_path)}")
+        print(f"Duan Path Len:     {len(duan_path)}")
+
+if __name__ == "__main__":
+    main()
