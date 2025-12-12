@@ -40,6 +40,14 @@ def run_benchmark_suite():
 
     plot_results(sizes, times_dijkstra, times_duan, fixed_density)
 
+    with open("results/data.csv", "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["size", "time_dijkstra", "time_duan"])
+        for n, t_dijk, t_duan in zip(sizes, times_dijkstra, times_duan):
+            writer.writerow([n, t_dijk, t_duan])
+    
+    print("CSV saved as results/data.csv")
+
 def plot_results(sizes, y1, y2, density):
     plt.figure(figsize=(10, 6))
 
