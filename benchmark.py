@@ -85,7 +85,7 @@ def plot_results(x_values, y_dijk, y_duan, title, xlabel, filename):
     os.makedirs('results', exist_ok=True)
     output_path = os.path.join('results', filename)
     plt.savefig(output_path)
-    print(f"✅ Plot saved to {output_path}")
+    print(f"Plot saved to {output_path}")
     plt.show()
 
 def main():
