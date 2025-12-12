@@ -41,10 +41,6 @@ def plot_results_from_csv(csv_path, save_path=None, show=False):
     if show:
         plt.show()
 
-
-# ===================================
-#  ARGPARSE
-# ===================================
 def build_arg_parser():
     parser = argparse.ArgumentParser(
         description="Benchmark + Visualization для SSSP алгоритмів"
@@ -77,10 +73,6 @@ def build_arg_parser():
 
     return parser
 
-
-# ===================================
-#  MAIN ENTRYPOINT
-# ===================================
 if __name__ == "__main__":
     parser = build_arg_parser()
     args = parser.parse_args()
@@ -102,5 +94,6 @@ if __name__ == "__main__":
                 save_path=args.save,
                 show=args.show
             )
+
 
 
