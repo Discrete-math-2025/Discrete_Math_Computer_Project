@@ -4,17 +4,32 @@ import heapq
 INF = float('inf')
 
 class DuanSSSP:
-    def __init__(self, matrix, source):
+    def __init__(self, graph_input, source):
         """
         Initialize the Duan et al. (2025) SSSP algorithm context.
-        Matrix is expected to be NxN list of lists (from benchmark.py).
+        Accepts either adjacency matrix (with 0 / INF for missing edges)
+        or adjacency list of (v, w) tuples.
         """
-        self.n = len(matrix)
+        self.n = len(graph_input)
         self.source = source
 
-        # Convert Adjacency Matrix to Adjacency List for O(m) performance
-        # Using standard list of lists instead of defaultdict
-        self.adj = matrix
+        # Normalize to adjacency list of (v, w) to simplify later code
+        self.adj = [[] for _ in range(self.n)]
+
+        # Detect adjacency list vs. matrix
+        is_adj_list = False
+        if self.n > 0 and graph_input[0]:
+            is_adj_list = isinstance(graph_input[0][0], (list, tuple))
+
+        if is_adj_list:
+            self.adj = graph_input
+        else:
+            for u in range(self.n):
+                for v, w in enumerate(graph_input[u]):
+                    if u == v:
+                        continue
+                    if w != 0 and w != INF:
+                        self.adj[u].append((v, w))
 
         self.dist = [float('inf')] * self.n
         self.dist[source] = 0
@@ -107,6 +122,8 @@ class DuanSSSP:
                         self.dist[v] = new_dist
                         self.pred[v] = u
 
+
+
                         # Case (a): Direct Insert
                         if Bi <= new_dist < B:
                             D.insert(v, new_dist)
@@ -160,10 +177,9 @@ class DuanSSSP:
             if len(W) > self.k * len(S):
                 return S, W
 
-        # Simplified Pivot Selection: P = S
-        # This is a valid upper bound for pivots as per Lemma 3.2 logic
-        # (Exact F-construction omitted for brevity but correctness is maintained via S)
-        return S, W
+        # Use the last frontier as pivots so recursion advances beyond S
+        P = Wi_prev if Wi_prev else S
+        return P, W
 
     def base_case(self, B, S):
         """
@@ -173,58 +189,33 @@ class DuanSSSP:
             return B, set()
 
         pq = []
-        U0 = set(S)
+        touched = set()
 
         for u in S:
             heapq.heappush(pq, (self.dist[u], u))
 
-        final_U = set()
-
-        while pq and len(U0) < self.k + 1:
+        while pq:
             d_u, u = heapq.heappop(pq)
 
             if d_u > self.dist[u]:
                 continue
-
-            # Add to processed set logic
-            if d_u < B:
-                 # Only if strictly less than B do we count it towards processed
-                 pass
-
-            # Stop if we hit bound B within the heap extraction
             if d_u >= B:
-                continue
+                break
 
-            # Expand
+            touched.add(u)
+
             for v, weight in self.adj[u]:
-                if self.dist[u] + weight <= self.dist[v]:
-                    new_dist = self.dist[u] + weight
-                    if new_dist < B:
-                        self.dist[v] = new_dist
-                        self.pred[v] = u
+                new_dist = d_u + weight
+                if new_dist < self.dist[v]:
+                    self.dist[v] = new_dist
+                    self.pred[v] = u
+                # Use <= to propagate equal-length paths so downstream relaxations run
+                if new_dist <= self.dist[v] and new_dist < B:
+                    heapq.heappush(pq, (new_dist, v))
 
-                        if v not in U0:
-                            U0.add(v)
-                            heapq.heappush(pq, (new_dist, v))
-                        else:
-                            heapq.heappush(pq, (new_dist, v))
-
-        # Filter valid U0 based on final distances
-        # We must return U = {v in U0 : dist[v] < B'}
-
-        # Find B'
-        if len(U0) <= self.k:
-             # Successful
-             return B, U0
-        else:
-             # Partial
-             valid_dists = [self.dist[v] for v in U0 if self.dist[v] < INF]
-             if not valid_dists:
-                 return B, U0
-
-             B_prime = max(valid_dists)
-             U_ret = {v for v in U0 if self.dist[v] < B_prime}
-             return B_prime, U_ret
+        # Return bound B' (unchanged here) and nodes improved in this call
+        U_ret = {v for v in touched if self.dist[v] < B}
+        return B, U_ret
 
 
 class DataStructureD:
@@ -268,6 +259,8 @@ class DataStructureD:
                 count += 1
 
         Bi = self.B
+
+
 
         # Peek at next valid element
         while self.pq:
